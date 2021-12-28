@@ -5,18 +5,25 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
     state: {
+        clientId: "2aa99d4e3f9d491f86043aaa41f43000",
+        clientSecret: "414244e090d9468d99aea9c7ea9ac4a6",
+        spotifyAuthUrl: "https://accounts.spotify.com/authorize",
+        spotifyTokenUrl: "https://accounts.spotify.com/api/token",
+        redirectUri: "http://localhost:8080/",
         loggedIn: false,
         accessToken: null,
         refreshToken: null,
         userId: null,
         playlists: null,
         tracks: null,
+        tags: null,
     },
     mutations: {
         SET_ACCESS_TOKEN(state, accessToken) {
             console.log('accessToken :', accessToken)
             state.accessToken = accessToken
         },
+
         SET_REFRESH_TOKEN(state, refreshToken) {
             console.log('refreshToken :', refreshToken)
             state.refreshToken = refreshToken
@@ -36,7 +43,11 @@ export default new Vuex.Store({
         SET_TRACKS(state, tracks) {
             console.log('tracks: ', tracks)
             state.tracks = tracks
-        }
+        },
+        SET_TAGS_PLAYLIST(state) {
+            state.tags = []
+            state.playlists.forEach(playlist => state.tags.push(playlist.name))
+        },
     },
     actions: {
         async fetchUser(context, payload) {
@@ -67,8 +78,11 @@ export default new Vuex.Store({
                     payload['playlists'] = response.data.items
                     let tracks = await this.dispatch('fetchTracks', payload)
                     commit('SET_TRACKS', tracks)
+                    commit('SET_TAGS_PLAYLIST')
+
                 })
         },
+
         async fetchTracks(context, payload) {
             let allTracks = []
             let offsetAdd = 100
@@ -96,26 +110,8 @@ export default new Vuex.Store({
                     offset += offsetAdd
                 }
             }
-            console.log(allTracks)
             return allTracks
         }
     },
-    // getters: {
-    //     loggedIn: state => {
-    //         return state.loggedIn
-    //     },
-    //     accessToken: state => {
-    //         return state.accessToken
-    //     },
-    //     refreshToken: state => {
-    //         return state.refreshToken
-    //     },
-    //     userId: state => {
-    //         return state.userId
-    //     },
-    //     playlists: state => {
-    //         return state.playlists
-    //     },
-    // },
 
 })
