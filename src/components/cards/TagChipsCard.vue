@@ -1,5 +1,5 @@
 <template>
-  <v-card v-if="loggedIn" class="mt-4" style="display: flex;background-color: white; justify-content: center"
+  <v-card v-if="loggedIn && tags" class="mt-4" style="display: flex;background-color: white; justify-content: center"
           elevation="1">
     <TagChips :editing-index="editingIndex" :tags="tags"/>
   </v-card>
@@ -14,9 +14,13 @@ export default {
   props: {
     editingIndex: {},
   },
-  computed: mapState({
-    loggedIn: state => state.loggedIn,
-    tags: state => state.tags
-  }),
+  computed: {
+    ...mapState('auth', {
+      loggedIn: state => state.loggedIn,
+    }),
+    ...mapState('tracks', {
+      tags: state => state.tracks
+    }),
+  }
 }
 </script>

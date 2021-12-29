@@ -1,5 +1,5 @@
 <template>
-  <v-btn v-if="!loggedIn" class="white--text" style="border-radius:20px" color='#1DB954' @click="submitApp">
+  <v-btn class="white--text" style="border-radius:20px" color='#1DB954' @click="submitApp">
     Login
   </v-btn>
 </template>
@@ -12,9 +12,14 @@ export default {
   mixins: [SpotifyApiMixin],
   props: {
   },
-  computed: mapState({
-    loggedIn: state => state.loggedIn,
-    tags: state => state.tags
-  }),
+  computed: {
+    ...mapState('auth', {
+      loggedIn: state => state.loggedIn,
+    }),
+    ...mapState('tracks', {
+      tags: state => state.tags
+    }),
+  }
+
 }
 </script>
