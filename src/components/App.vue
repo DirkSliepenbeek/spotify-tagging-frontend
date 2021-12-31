@@ -40,12 +40,11 @@ import TrackDataTable from "@/components/TrackDataTable";
 import FetchPlayListBtn from "@/components/buttons/FetchPlayListBtn";
 import LoginBtn from "@/components/buttons/LoginBtn";
 import TagChipsCard from "@/components/cards/TagChipsCard";
-import SpotifyApiMixin from "@/mixins/SpotifyApiMixin";
+import $store from "@/store";
 
 
 export default {
   name: 'App',
-  mixins: [SpotifyApiMixin],
   components: {TagChipsCard, LoginBtn, FetchPlayListBtn, TrackDataTable},
   data: () => ({
     editing: false,
@@ -53,6 +52,9 @@ export default {
     newTag: ""
   }),
   computed: {
+    ...mapState('auth', {
+      loggedIn: state => state.loggedIn,
+    }),
     ...mapState('tracks', {
       tags: state => state.tags,
       tracks: state => state.tracks,
@@ -62,11 +64,25 @@ export default {
   },
   methods: {},
   async mounted() {
-    if (window.location.search.length > 0) {
-      await this.handleRedirect()
+    let refresh_token = localStorage.getItem("refresh_token")
+    let access_token = localStorage.getItem("access_token")
+    if (access_token && refresh_token) {
+      try {
+        await $store.dispatch('auth/fetchUser', {'accessToken': access_token})
+        $store.commit('auth/SET_ACCESS_TOKEN', access_token)
+        $store.commit('auth/SET_REFRESH_TOKEN', refresh_token)
+      } catch {
+        await $store.dispatch('auth/refreshToken', {'refreshToken': refresh_token})
+      }
+    } else if (window.location.search.length > 0) {
+      await $store.dispatch('auth/handleRedirect')
     } else {
-      await this.submitApp()
+      await $store.dispatch('auth/submitApp')
     }
+    await $store.dispatch('player/fetchWebPlaybackSDKPlayer')
+    await $store.dispatch('backend_auth/fetchAuthToken')
+    await window.history.pushState("", "", this.redirectUri)
+
   }
 }
 ;

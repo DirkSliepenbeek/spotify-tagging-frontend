@@ -27,7 +27,6 @@ export const mutations = {
 }
 export const actions = {
     async fetchPlaylists(context, payload) {
-
         let baseURI = `https://api.spotify.com/v1/users/${payload['userId']}/playlists`
         this._vm.$api.get(baseURI, {
             headers: {
@@ -51,10 +50,10 @@ export const actions = {
             numberOfCallsRequired = (numberOfCallsRequired === 0) ? 1 : numberOfCallsRequired;
             let offset = 0
 
-            // TODO temporary to test easily
-            if (numberOfCallsRequired > 1) {
-                continue
-            }
+            // // TODO temporary to test easily
+            // if (numberOfCallsRequired > 1) {
+            //     continue
+            // }
             for (let step = 0; step < numberOfCallsRequired; step++) {
                 let baseURI = `https://api.spotify.com/v1/playlists/${playlist.id}/tracks?offset=${offset}`
                 let response = await this._vm.$api.get(baseURI, {

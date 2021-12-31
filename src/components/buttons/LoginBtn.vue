@@ -5,13 +5,11 @@
 </template>
 <script>
 import {mapState} from "vuex";
-import SpotifyApiMixin from "@/mixins/SpotifyApiMixin";
+import $store from "@/store";
 
 export default {
   name: 'LoginBtn',
-  mixins: [SpotifyApiMixin],
-  props: {
-  },
+  props: {},
   computed: {
     ...mapState('auth', {
       loggedIn: state => state.loggedIn,
@@ -19,7 +17,11 @@ export default {
     ...mapState('tracks', {
       tags: state => state.tags
     }),
+  },
+  methods: {
+    async submitApp() {
+      await $store.dispatch('auth/submitApp')
+    }
   }
-
 }
 </script>

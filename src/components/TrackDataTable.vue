@@ -1,67 +1,124 @@
 <template>
   <v-data-table
       v-if="loggedIn && tracks"
-      :headers="headers"
       :items="tracks ? tracks : []"
+      :headers="headers"
       :items-per-page="10"
       class="elevation-1 mt-6"
-      dense
   >
+    <template v-slot:header="{}">
+      <thead>
+      <tr>
+        <td colspan="4">
+          <v-text-field
+              filled
+              v-model="search"
+              label="Search"
+              class="pt-8 mx-4"
+          ></v-text-field>
+        </td>
+      </tr>
 
-    <template v-slot:item.actions="{ item }">
-      <v-icon
-          @click="startPlaying(item)"
-      >mdi-play
-      </v-icon>
-
+      </thead>
     </template>
-    <template v-slot:top>
-      <v-text-field
-          filled
-          v-model="search"
-          label="Search"
-          class="pt-8 mx-4"
-      ></v-text-field>
-    </template>
 
-    <template v-slot:item.tags="{ item }">
-      <v-combobox
-          v-if="tags"
-          flat
-          solo
-          multiple
-          dense
-          v-model="item.tags"
-          :items="tags"
-          item-color="deep-purple"
-          hide-details
+    <template v-slot:body="{ items }">
+
+      <tbody>
+
+      <tr
+          v-for="(item, index) in items"
+          :key="item.id"
+          @mouseover="selectItem(item)"
+          @mouseleave="unSelectItem()"
       >
-        <template v-slot:selection="{ attrs, item}">
-          <v-chip small class="ma-1">
-            {{ item }}
-          </v-chip>
-        </template>
+        <td>
+          <div v-if="item === selectedItem">
+            <v-icon
+                v-if="currentTrack===item.track && pause"
+                @click="togglePlay"
+            >mdi-play
+            </v-icon>
+            <v-icon
+                v-else-if="!currentTrack || currentTrack !== item.track || pause"
+                @click="playTrack(item); createTrack(item)"
+            >mdi-play
+            </v-icon>
 
-        <template v-slot:item="{ index, item }">
-          <v-chip
-              small
+            <v-icon
+                v-else
+                @click="togglePlay"
+            >mdi-pause
+            </v-icon>
+
+          </div>
+          <v-icon v-else-if="item.track === currentTrack && !pause" color="#1db954">
+            mdi-chart-bar
+          </v-icon>
+          <span v-else-if="item.track === currentTrack" style="color: #1db954">
+            {{ index + 1 }}
+          </span>
+          <span v-else>
+            {{ index + 1 }}
+          </span>
+
+        </td>
+        <td class="text-left">
+          <span v-if="item.track === currentTrack" style="color:#1db954">
+            {{ item.track.name }}
+          </span>
+          <span v-else>
+             {{ item.track.name }}
+          </span>
+
+          <br>
+          <small>
+            {{ getArtists(item.track) }}
+          </small>
+        </td>
+        <td class="text-left"><small>{{ item.track.album.name }}</small></td>
+        <td>
+          <v-combobox
+              v-if="tags"
+              flat
+              solo
+              multiple
+              dense
+              v-model="item.tags"
+              :items="tags"
+              item-color="deep-purple"
+              hide-details
+              background-color="rgba(0,0,0,0)"
           >
-            {{ item }}
-          </v-chip>
+            <template v-slot:select="{ attrs, item}">
+              <v-chip small class="ma-1">
+                {{ item }}
+              </v-chip>
+            </template>
+            <template v-slot:selection="{ attrs, item}">
+              <v-chip small class="ma-1">
+                {{ item }}
+              </v-chip>
+            </template>
 
-        </template>
-
-
-      </v-combobox>
-
+            <template v-slot:item="{ index, item }">
+              <v-chip
+                  small
+              >
+                {{ item }}
+              </v-chip>
+            </template>
+          </v-combobox>
+        </td>
+      </tr>
+      </tbody>
     </template>
-
 
   </v-data-table>
 </template>
 <script>
 import {mapState} from "vuex";
-
+import $store from "@/store";
 
 export default {
   name: 'TrackDataTable',
@@ -77,14 +134,18 @@ export default {
       playlists: state => state.playlists,
       tracks: state => state.tracks,
       selectedTags: state => state.selectedTags
+    }),
+    ...mapState("player", {
+      currentTrack: state => state.currentTrack,
+      pause: state => state.pause
     })
   },
   data() {
     return {
       search: '',
-      player: null,
+      selectedItem: false,
       headers: [
-        {text: '', value: 'actions', width: "5%", sortable: false,},
+        {text: '#', value: 'actions', width: "10%", sortable: false, align: 'center'},
         {
           text: 'Title',
           value: 'track.name',
@@ -96,17 +157,24 @@ export default {
         },
         {text: 'Album', value: 'track.album.name', filterable: true, filter: this.nameFilter, width: "30%"},
         {
-          text: 'Tags',
+          text: '',
           value: 'tags',
           filterable: true,
           filter: this.tagFilter,
           width: "35%",
           cellClass: 'ma-2 pa-2',
-          align: 'start'
+          align: 'start',
+          sortable: true
         }]
     }
   },
   methods: {
+    selectItem(item) {
+      this.selectedItem = item
+    },
+    unSelectItem() {
+      this.selectedItem = false
+    },
     tagFilter(value) {
       if (!this.selectedTags || this.selectedTags === "" || this.selectedTags.length === 0) {
         return true;
@@ -122,99 +190,36 @@ export default {
       }
     },
     nameFilter(value, search, item) {
-      return item.track.name.includes(this.search) || item.track.album.name.includes(this.search);
+      return item.track.name.toLowerCase().includes(this.search.toLowerCase()) || item.track.album.name.toLowerCase().includes(this.search.toLowerCase());
     },
-    startPlaying(item) {
-      this.player.addListener('ready', ({device_id}) => {
-        console.log('Ready with Device ID', device_id);
-        // eslint-disable-next-line no-undef
-        var player = new Spotify.Player({
-          name: 'A Spotify Web SDK Player',
-          getOAuthToken: callback => {
-            callback(this.accessToken);
-          },
-          volume: 0.1
-        });
-        const play = ({
-                        spotify_uri,
-                        playerInstance: {
-                          _options: {
-                            getOAuthToken,
-                            id
-                          }
-                        }
-                      }) => {
-          getOAuthToken(access_token => {
-            fetch(`https://api.spotify.com/v1/me/player/play?device_id=${id}`, {
-              method: 'PUT',
-              body: JSON.stringify({uris: [spotify_uri]}),
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${access_token}`
-              },
-            });
-          });
-        };
+    togglePlay() {
+      $store.dispatch('player/togglePlay')
+    },
+    playTrack(track) {
+      $store.dispatch('player/playSong', track)
+    },
+    getArtists(track) {
+      let string = ''
+      track.artists.forEach(artist => {
+        if (artist.name) {
+          string += artist.name + ", "
+          return string
+        }
 
-        play({
-          playerInstance: player,
-          spotify_uri: item.track.uri,
-        });
-      });
-
+      })
+      string = string.slice(0, -2)
+      return string
+    },
+    createTrack(item){
+      $store.dispatch('backend_auth/createTrack', item)
     }
 
   },
+
   mounted() {
     let recaptchaScript = document.createElement('script')
-
     recaptchaScript.setAttribute('src', 'https://sdk.scdn.co/spotify-player.js')
     document.body.appendChild(recaptchaScript)
-
-
-    window.onSpotifyWebPlaybackSDKReady = () => {
-      const token = this.accessToken;
-      // eslint-disable-next-line no-undef
-      const player = new Spotify.Player({
-        name: 'Web Playback SDK Quick Start Player',
-        getOAuthToken: cb => {
-          cb(token);
-        },
-        scope: 'web-playback',
-        volume: 0.5
-      });
-      console.log(player)
-
-      // Ready
-      player.addListener('ready', ({device_id}) => {
-        console.log('Ready with Device ID', device_id);
-      });
-
-      // Not Ready
-      player.addListener('not_ready', ({device_id}) => {
-        console.log('Device ID has gone offline', device_id);
-      });
-      player.addListener('initialization_error', ({message}) => {
-        console.log('initialization_error')
-
-        console.error(message);
-      });
-
-      player.addListener('authentication_error', ({message}) => {
-        console.log('authentication_error')
-
-        console.error(message);
-      });
-
-      player.addListener('account_error', ({message}) => {
-        console.log('account_error')
-        console.error(message);
-      });
-      player.connect();
-
-      this.player = player
-
-    }
   }
 }
 </script>

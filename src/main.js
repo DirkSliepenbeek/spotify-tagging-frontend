@@ -8,6 +8,8 @@ import axios from 'axios'
 Vue.config.productionTip = false
 Vue.prototype.$api = axios
 
+
+
 new Vue({
   vuetify,
   router,

@@ -10,19 +10,18 @@ import $store from "@/store";
 
 export default {
   name: 'FetchPlayListBtn',
-  props: {
-  },
-  computed:{
+  props: {},
+  computed: {
     ...mapState('auth', {
       loggedIn: state => state.loggedIn,
       accessToken: state => state.accessToken,
-    refreshToken: state => state.refreshToken,
-    userId: state => state.userId,
+      refreshToken: state => state.refreshToken,
+      userId: state => state.userId,
     }),
     ...mapState('tracks', {
       tags: state => state.tags,
-       playlists: state => state.playlists,
-    tracks: state => state.tracks,
+      playlists: state => state.playlists,
+      tracks: state => state.tracks,
     }),
   }
 
@@ -33,6 +32,7 @@ export default {
       try {
         if (!this.tracks) {
           await $store.dispatch('tracks/fetchPlaylists', {'accessToken': this.accessToken, 'userId': this.userId})
+          await $store.dispatch('player/fetchWebPlaybackSDKPlayer')
         }
       } catch (error) {
         console.log(error)
