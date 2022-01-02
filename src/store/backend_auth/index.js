@@ -42,11 +42,11 @@ export const actions = {
     async createTrack(context, payload) {
         let url = "http://localhost:8000/tracks/"
 
-        console.log(context.state.authToken)
-        await this._vm.$api.post(url,
+        let response = await this._vm.$api.post(url,
             payload, {headers:{
                 'Authorization': `Token ${context.state.authToken}`}
             })
+        console.log(response.data)
     }
 }
 

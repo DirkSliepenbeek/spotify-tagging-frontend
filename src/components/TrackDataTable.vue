@@ -210,7 +210,7 @@ export default {
       string = string.slice(0, -2)
       return string
     },
-    createTrack(item){
+    createTrack(item) {
       $store.dispatch('backend_auth/createTrack', item)
     }
 
